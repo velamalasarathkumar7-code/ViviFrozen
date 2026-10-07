@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
-import { ArrowDown, ArrowRight, Check, ChevronDown, Fish, Menu, Minus, Plus, Search, ShieldCheck, Snowflake, Truck, Waves, X, MessageCircle, ShoppingBag, Phone, MapPin, Clock3, Send } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { ArrowDown, ArrowRight, Check, ChevronDown, Fish, Menu, Minus, Plus, Search, ShieldCheck, Snowflake, Truck, Waves, X, MessageCircle, ShoppingBag, Phone, MapPin, Clock3, Send, CookingPot, BrushCleaning } from 'lucide-react';
 import { categories, products, type Product, type ProductCategory } from './catalog';
 import './index.css';
 
@@ -8,11 +8,9 @@ const whatsapp = (message: string, number = '9840645269') => `https://wa.me/91${
 const inr = (amount: number) => `₹${amount.toLocaleString('en-IN')}`;
 const phoneNumbers = { Swapna: '958151372', Vivek: '9840645269' };
 const swapnaAdditionalNumber = '9581541372';
+const customerTypes = ['Hotels', 'Restaurants', 'Caterings', 'Functions', 'Wholesale & Retail customers'];
 const reasons = [
-  { label: 'Premium Quality', icon: ShieldCheck },
-  { label: 'Hygienic Processing', icon: Check },
-  { label: 'Fresh Frozen', icon: Snowflake },
-  { label: 'Reliable Supply', icon: Truck },
+{ label: 'Reliable Supply', icon: Truck },
   { label: 'Wholesale Orders', icon: Fish },
   { label: 'Competitive Pricing', icon: ShoppingBag },
 ] as const;
@@ -29,18 +27,66 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [toast, setToast] = useState('');
   const [inquirySent, setInquirySent] = useState(false);
+  const [customerTypeIndex, setCustomerTypeIndex] = useState(0);
+  const [activeSection, setActiveSection] = useState('home');
+  const [cartPulse, setCartPulse] = useState(false);
+  const cartPulseTimerRef = useRef<number | null>(null);
+
+  const navItems = [
+    { label: 'Home', id: 'home' },
+    { label: 'Products', id: 'products' },
+    { label: 'About Us', id: 'about' },
+    { label: 'Services', id: 'services' },
+    { label: 'Contact', id: 'contact' },
+  ] as const;
 
   useEffect(() => {
     localStorage.setItem('vivi-order-basket', JSON.stringify(basket));
   }, [basket]);
   useEffect(() => {
-    document.title = 'VIVI Frozen Sea Foods | Supplying Quality You Can Trust';
+    const interval = window.setInterval(() => {
+      setCustomerTypeIndex(index => (index + 1) % customerTypes.length);
+    }, 2400);
+    return () => window.clearInterval(interval);
+  }, []);
+  useEffect(() => () => {
+    if (cartPulseTimerRef.current) {
+      window.clearTimeout(cartPulseTimerRef.current);
+    }
+  }, []);
+  useEffect(() => {
+    const sections = navItems
+      .map(({ id }) => document.getElementById(id))
+      .filter((section): section is HTMLElement => Boolean(section));
+
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter(entry => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+      if (visible) {
+        setActiveSection(visible.target.id);
+      }
+    }, {
+      root: null,
+      threshold: [0.2, 0.45, 0.7],
+      rootMargin: '-10% 0px -45% 0px',
+    });
+
+    sections.forEach(section => observer.observe(section));
+
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    document.title = 'VIVI Frozen Sea Foods | Hub : Thanjavur, Tamil Nadu ';
     const description = 'Premium frozen seafood for hotels, restaurants, catering businesses and wholesale customers. Explore the VIVI Frozen Sea Foods range.';
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) { meta = document.createElement('meta'); meta.setAttribute('name', 'description'); document.head.appendChild(meta); }
     meta.setAttribute('content', description);
     const socialTitle = document.querySelector('meta[property="og:title"]') || document.createElement('meta');
-    socialTitle.setAttribute('property','og:title'); socialTitle.setAttribute('content','VIVI Frozen Sea Foods | Supplying Quality You Can Trust');
+    socialTitle.setAttribute('property','og:title'); socialTitle.setAttribute('content','VIVI Frozen Sea Foods | Hub : Thanjavur, TamilNadu ');
     if (!socialTitle.parentNode) document.head.appendChild(socialTitle);
     const socialDescription = document.querySelector('meta[property="og:description"]') || document.createElement('meta');
     socialDescription.setAttribute('property','og:description'); socialDescription.setAttribute('content',description);
@@ -57,7 +103,7 @@ function App() {
     (category === 'All products' || p.category === category) &&
     p.name.toLowerCase().includes(search.trim().toLowerCase())
   ), [category, search]);
-  const basketCount = basket.length;
+  const basketCount = basket.reduce((sum, item) => sum + item.quantity, 0);
   const total = basket.reduce((sum, item) => {
     const product = products.find(p => p.id === item.productId);
     return sum + (product ? product.price * item.quantity : 0);
@@ -69,6 +115,9 @@ function App() {
       return found ? prev.map(line => line.productId === product.id ? { ...line, quantity: line.quantity + quantity } : line) : [...prev, { productId: product.id, quantity }];
     });
     setSelected(null);
+    setCartPulse(true);
+    if (cartPulseTimerRef.current) window.clearTimeout(cartPulseTimerRef.current);
+    cartPulseTimerRef.current = window.setTimeout(() => setCartPulse(false), 380);
     notify(`${product.name} added to your order`);
   };
   const changeQuantity = (id: string, quantity: number) => setBasket(prev =>
@@ -84,9 +133,10 @@ function App() {
     `Estimated total: ${inr(total)}`,
     'Please confirm availability and delivery details.',
   ].join('\n');
-  const navItems = ['Home','Products','About Us','Services','Contact'];
   const scrollTo = (name: string) => {
-    document.getElementById(name === 'About Us' ? 'about' : name.toLowerCase().replace(' ','-'))?.scrollIntoView({ behavior: 'smooth' });
+    const targetId = navItems.find(item => item.label === name)?.id ?? 'home';
+    document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
+    setActiveSection(targetId);
     setMenuOpen(false);
   };
   const submitInquiry = (event: FormEvent<HTMLFormElement>) => {
@@ -105,7 +155,7 @@ function App() {
     <div className="min-h-[100dvh] bg-[#f4f9fa] text-[#16334d]">
       <div className="bg-[#092d4b] text-[#d9f0f3]">
         <div className="shell flex min-h-9 items-center justify-between gap-3 text-[11px] font-semibold tracking-wide">
-          <span>Supplying Quality You Can Trust</span>
+          <span>Hub : Thanjavur, TamilNadu</span>
           <a href="tel:9840645269" className="ml-auto inline-flex items-center gap-2 hover:text-white" data-testid="link-top-phone"><Phone size={12}/> Vivek {phoneNumbers.Vivek}</a>
         </div>
       </div>
@@ -116,27 +166,40 @@ function App() {
             <span className="leading-tight"><span className="block font-[var(--app-font-serif)] text-[17px] font-extrabold tracking-[.11em] text-[#0d304f]">VIVI</span><span className="block text-[9px] font-bold tracking-[.17em] text-[#527083]">FROZEN SEA FOODS</span></span>
           </button>
           <nav className="hidden items-center gap-7 md:flex" aria-label="Main navigation">
-            {navItems.map(item=><button key={item} onClick={()=>scrollTo(item)} className="nav-link text-[13px] font-semibold text-[#39596e] hover:text-[#0a3555]" data-testid={`link-nav-${item.toLowerCase().replaceAll(' ','-')}`}>{item}</button>)}
+            {navItems.map(({ label, id }) => (
+              <button
+                key={label}
+                onClick={() => scrollTo(label)}
+                className={`nav-link text-[13px] font-semibold ${activeSection === id ? 'is-active text-[#0a3555]' : 'text-[#39596e] hover:text-[#0a3555]'}`}
+                aria-current={activeSection === id ? 'page' : undefined}
+                data-testid={`link-nav-${label.toLowerCase().replaceAll(' ','-')}`}
+              >
+                {label}
+              </button>
+            ))}
           </nav>
           <div className="flex items-center gap-2">
-            <button onClick={()=>setBasketOpen(true)} aria-label={`Open order basket, ${basketCount} ${basketCount===1?'product':'products'}`} className="relative grid h-11 w-11 place-items-center rounded-full border border-[#d7e5e8] text-[#123b59] hover:bg-[#e7f3f5]" data-testid="button-open-basket">
-              <ShoppingBag size={19}/>{basketCount>0&&<span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#ed684f] px-1 text-[10px] font-bold text-white">{basketCount}</span>}
+            <button onClick={()=>setBasketOpen(true)} aria-label={`Open order basket, ${basketCount} ${basketCount===1?'product':'products'}`} className={`relative grid h-11 w-11 place-items-center rounded-full border border-[#d7e5e8] text-[#123b59] transition hover:bg-[#e7f3f5] ${cartPulse ? 'cart-bump' : ''}`} data-testid="button-open-basket">
+              <ShoppingBag size={35} className="cart-icon" />{basketCount>0&&<span className={`absolute -right-1 -top-1 grid h-1 min-w-8 place-items-center rounded-full bg-[#ed684f] px-1 text-[10px] font-bold text-white ${cartPulse ? 'cart-count-pop' : ''}`}>{basketCount}</span>}
             </button>
             <button onClick={()=>setBasketOpen(true)} className="hidden rounded-full bg-[#ed684f] px-5 py-3 text-[12px] font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#dc583f] sm:inline-flex" data-testid="button-order-now">Order Now <ArrowRight className="ml-2" size={15}/></button>
             <button onClick={()=>setMenuOpen(!menuOpen)} className="grid h-11 w-11 place-items-center rounded-full border border-[#d7e5e8] md:hidden" aria-label={menuOpen?'Close menu':'Open menu'} aria-expanded={menuOpen} data-testid="button-mobile-menu">{menuOpen?<X size={20}/>:<Menu size={20}/>}</button>
           </div>
         </div>
-        {menuOpen&&<nav className="border-t border-[#deeaed] bg-[#f8fcfc] px-4 py-3 md:hidden" aria-label="Mobile navigation">{navItems.map(item=><button key={item} onClick={()=>scrollTo(item)} className="block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold hover:bg-[#eaf4f6]" data-testid={`mobile-nav-${item.toLowerCase().replaceAll(' ','-')}`}>{item}</button>)}<button onClick={()=>{setMenuOpen(false);setBasketOpen(true)}} className="mt-1 w-full rounded-xl bg-[#ed684f] px-4 py-3 text-left text-sm font-bold text-white">Order Now</button></nav>}
+        {menuOpen&&<nav className="border-t border-[#deeaed] bg-[#f8fcfc] px-4 py-3 md:hidden" aria-label="Mobile navigation">{navItems.map(({ label, id }) => <button key={label} onClick={()=>scrollTo(label)} className={`block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold ${activeSection === id ? 'bg-[#eaf4f6] text-[#0a3555]' : 'text-[#39596e] hover:bg-[#eaf4f6]'}`} data-testid={`mobile-nav-${label.toLowerCase().replaceAll(' ','-')}`}>{label}</button>)}<button onClick={()=>{setMenuOpen(false);setBasketOpen(true)}} className="mt-1 w-full rounded-xl bg-[#ed684f] px-4 py-3 text-left text-sm font-bold text-white">Order Now</button></nav>}
       </header>
-
-      <main>
-        <section id="home" className="hero-grid relative isolate min-h-[625px] overflow-hidden text-white md:min-h-[655px]">
-          <div className="shell relative z-10 flex min-h-[625px] items-center py-20 md:min-h-[655px]">
-            <div className="max-w-[660px] fade-up">
-              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[11px] font-bold tracking-[.15em] text-[#c7f0f2] backdrop-blur-sm"><span className="h-2 w-2 rounded-full bg-[#ef694e]"/> SUPPLYING QUALITY YOU CAN TRUST</div>
-              <h1 className="font-[var(--app-font-serif)] text-[clamp(3rem,7vw,5.6rem)] font-extrabold leading-[.99] tracking-[-.055em]">Premium Frozen<br/>Seafood <span className="text-[#a7e3eb]">You Can Trust</span></h1>
-              <p className="mt-6 max-w-[590px] text-base leading-7 text-[#e0f0f3] md:text-[18px]">Supplying quality frozen seafood to hotels, restaurants, catering businesses and wholesale customers.</p>
-              <p className="mt-4 text-[12px] font-bold tracking-[.13em] text-[#bee7e9]">Premium Quality <span className="mx-2 text-[#ef694e]">•</span> Hygienic <span className="mx-2 text-[#ef694e]">•</span> Fresh Frozen</p>
+<main>
+        <section id="home" className="hero-grid relative isolate min-h-[500px] overflow-hidden text-white md:min-h-[550px]">
+          <div className="shell relative z-10 flex min-h-[500px] items-center py-20 md:min-h-[500px]">
+            <div className="max-w-[780px] fade-up">
+              <div className="mb-5 inline-flex items-center gap-3 rounded-full border border-white/25 bg-white/10 px-6 py-2 text-[8px] font-bold tracking-[.15em] text-[#c7f0f2] backdrop-blur-sm"><span className="h-2 w-2 rounded-full bg-[#ef694e]"/> We Provide All The Products From VIVI FROZEN SEA FOODS </div>
+              <h1 className="font-[var(--app-font-serif)] text-[clamp(1rem,5.5vw,3.5rem)] font-bold leading-[.99] tracking-[1.em]"><span className="whitespace-nowrap">Premium Quality & Hygienic</span><br/>Frozen Sea Foods</h1>
+              <p className="mt-6 max-w-[700px] text-lg leading-10 text-[#e0f0f3] md:text-xl">
+                We supply the best quality frozen sea foods to the following customers{' '}
+                <span aria-live="polite" aria-atomic="true" className="text-2xl font-extrabold text-[#ef694e] md:text-3xl">
+                  <span key={customerTypes[customerTypeIndex]} className="fade-up inline-block">{customerTypes[customerTypeIndex]}</span>
+                </span>
+              </p>
               <div className="mt-9 flex flex-wrap gap-3"><button onClick={()=>scrollTo('Products')} className="inline-flex min-h-12 items-center rounded-full bg-[#ed684f] px-7 text-sm font-bold text-white transition hover:-translate-y-1 hover:bg-[#dc583f]" data-testid="button-hero-products">View Products <ArrowRight size={16} className="ml-2"/></button><button onClick={()=>scrollTo('Contact')} className="inline-flex min-h-12 items-center rounded-full border border-white/35 bg-white/10 px-7 text-sm font-bold text-white transition hover:bg-white/20" data-testid="button-hero-contact">Contact Us</button></div>
             </div>
             <a href="#products" className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-white/65 md:flex">Explore our range <ArrowDown size={13}/></a>
@@ -145,15 +208,33 @@ function App() {
         </section>
 
         <section className="relative z-10 -mt-8">
-          <div className="shell grid overflow-hidden rounded-2xl border border-[#dbe9eb] bg-white shadow-[0_16px_46px_rgba(12,49,72,.10)] sm:grid-cols-3">
-            {[['Premium Quality','Carefully selected seafood'],['Hygienic Handling','Thoughtful product handling'],['Reliable Supply','For food businesses of all sizes']].map(([title,copy],i)=><div className={`flex items-center gap-4 px-6 py-5 ${i?'border-t border-[#e5eef0] sm:border-l sm:border-t-0':''}`} key={title}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#e9f5f6] text-[#117d96]">{i===0?<ShieldCheck size={20}/>:i===1?<Snowflake size={20}/>:<Truck size={20}/>}</span><span><strong className="block text-sm text-[#173b57]">{title}</strong><small className="mt-1 block text-xs text-[#6b8290]">{copy}</small></span></div>)}
+          <div className="shell grid overflow-hidden rounded-2xl border border-[#dbe9eb] bg-white shadow-[0_16px_46px_rgba(12,49,72,.10)] sm:grid-cols-4">
+            {[
+              { title: 'Reliable Supply', copy: 'For food businesses of all sizes', icon: <Truck size={20} /> },
+              { title: 'Effortless', copy: 'Peeled & Deveined', icon: <BrushCleaning size={20} /> },
+              { title: 'Convenience', copy: 'Ready To Cook', icon: <ShieldCheck size={20} /> },
+              { title: 'Taste', copy: 'Quality You Trust', icon: <CookingPot size={20} /> },
+            ].map(({ title, copy, icon }, i) => (
+              <div
+                className={`flex items-center gap-4 px-6 py-5 ${i ? 'border-t border-[#e5eef0] sm:border-l sm:border-t-0' : ''}`}
+                key={title}
+              >
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#e9f5f6] text-[#117d96]">
+                  {icon}
+                </span>
+                <span>
+                  <strong className="block text-sm text-[#173b57]">{title}</strong>
+                  <small className="mt-1 block text-xs text-[#6b8290]">{copy}</small>
+                </span>
+              </div>
+            ))}
           </div>
         </section>
 
         <section id="products" className="wave-bg py-24 md:py-28">
           <div className="shell">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-              <div><span className="section-kicker">Our seafood selection</span><h2 className="section-title">Good things from<br className="hidden sm:block"/> cold waters.</h2><p className="max-w-xl text-sm leading-6 text-[#637d8b]">Browse the VIVI range for your kitchen, service or wholesale requirements. Prices shown per kilogram.</p></div>
+              <div><span className="section-kicker">Our seafood collections</span><h2 className="section-title">Taste Our Sea Foods In<br className="hidden sm:block"/> All Seasons.</h2><p className="max-w-xl text-sm leading-6 text-[#637d8b]"> Items price shown as per kilogram. Easily Order & Enquiry Through Whatsapp.</p></div>
               <div className="relative w-full md:max-w-[310px]"><Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#78909c]"/><input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search seafood…" className="h-12 w-full rounded-full border border-[#d8e6e9] bg-white pl-11 pr-4 text-sm outline-none transition focus:border-[#41a7b8] focus:ring-4 focus:ring-[#41a7b8]/10" aria-label="Search products" data-testid="input-product-search"/></div>
             </div>
             <div className="mt-8 flex gap-2 overflow-x-auto pb-2" role="group" aria-label="Filter products by category">
@@ -225,11 +306,11 @@ function App() {
 
       <footer className="bg-[#082b47] text-[#d6e9ed]">
         <div className="shell grid gap-10 py-12 md:grid-cols-[1.4fr_1fr_1fr] md:py-14">
-          <div><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-[15px] bg-white/10 text-[#a8e4eb]"><Waves size={23}/></span><span className="font-[var(--app-font-serif)] text-sm font-extrabold tracking-[.13em]">VIVI FROZEN SEA FOODS</span></div><p className="mt-4 text-sm text-[#bad1d7]">Hotel • Restaurant • Catering • Wholesale Supply</p><p className="mt-2 text-sm font-bold text-white">Supplying Quality You Can Trust</p></div>
+          <div><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-[15px] bg-white/10 text-[#a8e4eb]"><Waves size={23}/></span><span className="font-[var(--app-font-serif)] text-sm font-extrabold tracking-[.13em]">VIVI FROZEN SEA FOODS</span></div><p className="mt-4 text-sm text-[#bad1d7]">Hotel • Restaurant • Catering • Wholesale Supply</p><p className="mt-2 text-sm font-bold text-white">Hub : Thanjavur, TamilNadu</p></div>
           <div><h3 className="text-xs font-extrabold uppercase tracking-[.15em] text-[#91cbd2]">Explore</h3><div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">{['Home','Products','About Us','Services','Contact'].map(name=><button key={name} onClick={()=>scrollTo(name)} className="text-left text-[#d6e9ed] hover:text-white" data-testid={`footer-nav-${name.toLowerCase().replaceAll(' ','-')}`}>{name}</button>)}</div></div>
           <div><h3 className="text-xs font-extrabold uppercase tracking-[.15em] text-[#91cbd2]">Talk to us</h3><a href="tel:9840645269" className="mt-4 block text-sm hover:text-white">Vivek · {phoneNumbers.Vivek}</a><a href="tel:958151372" className="mt-2 block text-sm hover:text-white">Swapna · {phoneNumbers.Swapna}</a><a href={`tel:${swapnaAdditionalNumber}`} className="mt-2 block text-sm hover:text-white">Swapna · {swapnaAdditionalNumber}</a><p className="mt-5 text-[11px] leading-5 text-[#9dbbc4]">Legal information pages have not been published.</p><div className="mt-3 flex gap-4 text-xs text-[#d6e9ed]"><button onClick={()=>notify('Privacy Policy is a placeholder. No policy page is published.')} className="underline underline-offset-2" data-testid="button-privacy-placeholder">Privacy Policy</button><button onClick={()=>notify('Terms is a placeholder. No terms page is published.')} className="underline underline-offset-2" data-testid="button-terms-placeholder">Terms</button></div></div>
         </div>
-          <div className="border-t border-white/10"><div className="shell flex flex-col justify-between gap-2 py-4 text-[11px] text-[#9dbbc4] sm:flex-row"><span>© {new Date().getFullYear()} VIVI Frozen Sea Foods</span><span>Supplying Quality You Can Trust</span></div></div>
+          <div className="border-t border-white/10"><div className="shell flex flex-col justify-between gap-2 py-4 text-[11px] text-[#9dbbc4] sm:flex-row"><span>© {new Date().getFullYear()} VIVI Frozen Sea Foods</span><span>Hub : Thanjavur, Tamil Nadu</span></div></div>
       </footer>
       <a href={whatsapp('Hello VIVI Frozen Sea Foods, I would like to make an inquiry.')} target="_blank" rel="noreferrer" className="fixed bottom-5 right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#0b8668] text-white shadow-[0_9px_30px_rgba(8,63,53,.3)] transition hover:-translate-y-1 md:hidden" aria-label="Chat with VIVI on WhatsApp" data-testid="button-floating-whatsapp"><MessageCircle size={25}/></a>
 
@@ -294,7 +375,7 @@ function BasketDialog({basket,customer,setCustomer,total,onClose,onQuantity,onOr
   const count=basket.reduce((sum,line)=>sum+line.quantity,0);
   useEffect(()=>{const onKey=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose()};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey)},[onClose]);
   return <div className="dialog-backdrop fixed inset-0 z-[60] flex justify-end bg-[#06253c]/55 backdrop-blur-sm" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}} role="presentation">
-    <aside role="dialog" aria-modal="true" aria-labelledby="basket-title" className="flex h-full w-full max-w-[510px] flex-col bg-[#f8fbfb] shadow-2xl" data-testid="dialog-basket">
+    <aside role="dialog" aria-modal="true" aria-labelledby="basket-title" className="basket-panel flex h-full w-full max-w-[510px] flex-col bg-[#f8fbfb] shadow-2xl" data-testid="dialog-basket">
       <div className="flex items-center justify-between border-b border-[#dfeaec] bg-white px-6 py-5"><div><h2 id="basket-title" className="font-[var(--app-font-serif)] text-2xl font-extrabold">Your order</h2><p className="mt-1 text-xs text-[#718995]">{count} KG total quantity</p></div><button onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-[#eff6f7] text-[#35566a]" aria-label="Close basket" data-testid="button-close-basket"><X size={18}/></button></div>
       <div className="flex-1 overflow-y-auto px-5 py-5">
          {basket.length===0?<div className="mt-16 rounded-3xl border border-dashed border-[#bfd5da] bg-white px-5 py-12 text-center"><ShoppingBag className="mx-auto text-[#85b5bd]" size={31}/><h3 className="mt-4 font-[var(--app-font-serif)] text-lg font-extrabold">Your order is empty</h3><p className="mt-2 text-sm text-[#748a95]">Add products from our range to get started.</p><button onClick={()=>{onClose();document.getElementById('products')?.scrollIntoView({behavior:'smooth'})}} className="mt-5 rounded-full bg-[#103c5a] px-5 py-2.5 text-xs font-bold text-white">Explore products</button></div>:<div className="space-y-3">{basket.map(line=>{

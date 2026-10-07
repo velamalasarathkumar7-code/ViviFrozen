@@ -4,6 +4,11 @@ export type Product = { id: string; name: string; price: number; category: Produ
 
 const photos = {
   prawns: `${B}images/vivi-vannamei-prawns.jpg`,
+  prawnsExtraLarge: `${B}images/vannamei-prawns-extra-large.jpg`,
+  prawnsLarge: `${B}images/vannamei-prawns-large.png`,
+  prawnsMedium: `${B}images/vannamei-prawns-medium.jpg`,
+  prawnsSmall: `${B}images/vannamei-prawns-small.jpg`,
+  prawnsExtraSmall: `${B}images/vannamei-prawns-extra-small.jpg`,
   fish: 'https://images.pexels.com/photos/3296398/pexels-photo-3296398.jpeg?auto=compress&cs=tinysrgb&w=900',
   squidIqf: `${B}images/vivi-squid-iqf.jpg`,
   squidTubes: `${B}images/vivi-squid-tubes.jpg`,
@@ -17,6 +22,18 @@ const photos = {
 };
 const prawnLabel: Record<string,string> = {'21/25':'Extra Large','26/30':'Extra Large','31/40':'Large','41/50':'Large','51/60':'Medium','61/70':'Medium','71/90':'Medium','91/110':'Small','100/120':'Small','100/200':'Extra Small','200/300':'Extra Small','300/500':'Extra Small'};
 const gallery: Record<string,string[]> = {
+  "Vannamei Prawns – 21/25 Extra Large": [photos.prawnsExtraLarge, photos.prawns],
+  "Vannamei Prawns – 26/30 Extra Large": [photos.prawnsExtraLarge, photos.prawns],
+  "Vannamei Prawns – 31/40 Large": [photos.prawnsLarge, photos.prawns],
+  "Vannamei Prawns – 41/50 Large": [photos.prawnsLarge, photos.prawns],
+  "Vannamei Prawns – 51/60 Medium": [photos.prawnsMedium, photos.prawns],
+  "Vannamei Prawns – 61/70 Medium": [photos.prawnsMedium, photos.prawns],
+  "Vannamei Prawns – 71/90 Medium": [photos.prawnsMedium, photos.prawns],
+  "Vannamei Prawns – 91/110 Small": [photos.prawnsSmall, photos.prawns],
+  "Vannamei Prawns – 100/120 Small": [photos.prawnsSmall, photos.prawns],
+  "Vannamei Prawns – 100/200 Extra Small": [photos.prawnsExtraSmall, photos.prawns],
+  "Vannamei Prawns – 200/300 Extra Small": [photos.prawnsExtraSmall, photos.prawns],
+  "Vannamei Prawns – 300/500 Extra Small": [photos.prawnsExtraSmall, photos.prawns],
   "Squid IQF": [
     `${B}images/products/squid-iqf-1.jpg`,
     `${B}images/products/squid-iqf-2.jpg`

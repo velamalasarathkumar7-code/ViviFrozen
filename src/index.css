@@ -64,7 +64,15 @@ button,a { -webkit-tap-highlight-color: transparent; }
 @keyframes rise { from {opacity:0;transform:translateY(14px)} to {opacity:1;transform:translateY(0)} }
 .nav-link { position:relative; transition:color .2s ease; }
 .nav-link:after { content:"";position:absolute;height:2px;left:0;right:100%;bottom:-7px;background:#ef674e;transition:right .22s ease; }
-.nav-link:hover:after,.nav-link:focus-visible:after {right:0}
+.nav-link:hover:after,.nav-link:focus-visible:after,.nav-link.is-active:after { right:0; }
+.nav-link.is-active { color:#0a3555; }
+.cart-bump { animation:cart-bump .42s ease; }
+.cart-icon { transform-origin:center; }
+.cart-count-pop { animation:cart-count-pop .42s ease; }
+.basket-panel { animation:basket-panel-in .26s ease-out; }
+@keyframes cart-bump { 0% { transform:scale(1); } 28% { transform:scale(1.12); } 52% { transform:scale(.96); } 100% { transform:scale(1); } }
+@keyframes cart-count-pop { 0% { transform:scale(.75); opacity:.7; } 45% { transform:scale(1.2); opacity:1; } 100% { transform:scale(1); opacity:1; } }
+@keyframes basket-panel-in { 0% { transform:translateX(26px); opacity:0; } 100% { transform:translateX(0); opacity:1; } }
 .icon-button { transition:transform .2s ease,background .2s ease; }
 .icon-button:hover { transform:translateY(-2px); }
 .form-input { display:block; width:100%; min-height:44px; border:1px solid #d8e6e9; border-radius:12px; background:#fff; padding:10px 13px; color:#183d56; font-size:13px; outline:none; transition:border-color .2s,box-shadow .2s; }

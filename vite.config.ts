@@ -3,6 +3,6 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/ViviFrozen/',
+  base: '/vivi/',
   plugins: [react()],
 })
